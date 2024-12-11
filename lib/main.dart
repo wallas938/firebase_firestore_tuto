@@ -56,6 +56,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   TextEditingController todoController = TextEditingController();
+  FirebaseFirestore firebaseFirestore = FirebaseFirestore.instance;
+  final Stream<QuerySnapshot> _todosStream =
+      FirebaseFirestore.instance.collection('todos').snapshots();
   List<Todo> todos = [];
 
   @override
@@ -74,8 +77,6 @@ class _MyHomePageState extends State<MyHomePage> {
     Todo todo = Todo(title: todoController.text);
 
     try {
-      FirebaseFirestore firebaseFirestore = FirebaseFirestore.instance;
-
       await firebaseFirestore.collection("todos").add(todo.toJson());
       todoController.clear();
       _loadTodos();
@@ -136,25 +137,77 @@ class _MyHomePageState extends State<MyHomePage> {
               height: 50,
             ),
             Expanded(
-              child: ListView.builder(
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(todos[index].title),
-                    subtitle: Text(todos[index].uid!),
-                    trailing: GestureDetector(
-                      onTap: () {
-                        _deleteTodo(todos[index].uid!);
-                      },
-                      child: const Icon(
-                        Icons.delete,
-                        color: Colors.redAccent,
-                      ),
-                    ),
-                  );
-                },
-                itemCount: todos.length,
-              ),
-            )
+              child: StreamBuilder<QuerySnapshot>(
+                  stream: _todosStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return const Text('Something went wrong');
+                    }
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Text("Loading");
+                    }
+                    return ListView(
+                      children: snapshot.data!.docs
+                          .map((DocumentSnapshot document) {
+                            Map<String, dynamic> data =
+                                document.data()! as Map<String, dynamic>;
+                            Todo todo = Todo.fromJson(document.id, data);
+                            return ListTile(
+                              title: Text(todo.title),
+                              subtitle: Text(todo.uid!),
+                              trailing: GestureDetector(
+                                onTap: () {
+                                  _deleteTodo(todo.uid!);
+                                },
+                                child: const Icon(
+                                  Icons.delete,
+                                  color: Colors.redAccent,
+                                ),
+                              ),
+                            );
+                          })
+                          .toList()
+                          .cast(),
+                      // children: snapshot.data!.docs.map((DocumentSnapshot document) {
+                      //   Map<String, dynamic> data =
+                      //   document.data()! as Map<String, dynamic>;
+                      //   return ListTile(
+                      //               title: Text(todos[index].title),
+                      //               subtitle: Text(todos[index].uid!),
+                      //               trailing: GestureDetector(
+                      //                 onTap: () {
+                      //                   _deleteTodo(todos[index].uid!);
+                      //                 },
+                      //                 child: const Icon(
+                      //                   Icons.delete,
+                      //                   color: Colors.redAccent,
+                      //                 ),
+                      //               ),
+                      //             );
+                    );
+                  }),
+            ),
+            // Expanded(
+            //   child: ListView.builder(
+            //     itemBuilder: (context, index) {
+            //       return ListTile(
+            //         title: Text(todos[index].title),
+            //         subtitle: Text(todos[index].uid!),
+            //         trailing: GestureDetector(
+            //           onTap: () {
+            //             _deleteTodo(todos[index].uid!);
+            //           },
+            //           child: const Icon(
+            //             Icons.delete,
+            //             color: Colors.redAccent,
+            //           ),
+            //         ),
+            //       );
+            //     },
+            //     itemCount: todos.length,
+            //   ),
+            // )
           ],
         ),
       ),
