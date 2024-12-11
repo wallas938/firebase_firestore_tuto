@@ -1,0 +1,1 @@
+{"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"fir-firestore-tuto-88521","configurations":{"web":"1:868676069841:web:97f494946624806bbf58f0"}}}}}}
